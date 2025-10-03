@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Write your thoughts</title>
+<style>
+body{font-family: Arial,Helvetica,sans-serif;display:flex;flex-direction:column;align-items:center;padding:2rem}
+.card{max-width:720px;width:100%;}
+textarea{width:100%;height:120px}
+img{max-width:200px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>Write your thoughts</h1>
+<div>
+<img src="/assets/cover.jpg" alt="album cover"/>
+</div>
+<audio controls src="/assets/track.mp3">Your browser does not support audio</audio>
+<form id="thoughtForm">
+<textarea name="text" id="text" placeholder="Type your thoughts about the song..."></textarea>
+<br>
+<button type="submit">Send</button>
+</form>
+<div id="status"></div>
+<h2>All thoughts</h2>
+<ul id="list"></ul>
+</div>
+
+
+<script>
+const API_BASE = 'https://TODO_BACKEND_URL'; // TODO: replace with your backend URL (ALB DNS or API Gateway)
+
+
+async function postThought(text){
+const res = await fetch(API_BASE + '/api/thoughts',{
+method:'POST',
+headers: {'Content-Type':'application/json'},
+body: JSON.stringify({text})
+});
+return res.json();
+}
+
+
+async function loadThoughts(){
+try{
+const res = await fetch(API_BASE + '/api/thoughts');
+const data = await res.json();
+const list = document.getElementById('list');
+list.innerHTML = '';
+data.forEach(t=>{ const li = document.createElement('li'); li.textContent = new Date(t.created_at).toLocaleString() + ' — ' + t.text; list.appendChild(li); });
+}catch(e){ console.error(e); }
+}
+
+
+document.getElementById('thoughtForm').addEventListener('submit', async (e)=>{
+e.preventDefault();
+const text = document.getElementById('text').value.trim();
+if(!text) return;
+document.getElementById('status').textContent='Sending...';
+try{
+await postThought(text);
+document.getElementById('status').textContent='Saved';
+document.getElementById('text').value='';
+await loadThoughts();
+}catch(err){ document.getElementById('status').textContent='Error'; console.error(err); }
+});
+
+
+// initial load
+loadThoughts();
+</script>
+</body>
+</html>
