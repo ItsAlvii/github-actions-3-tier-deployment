@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Write your thoughts</title>
+[?12;2$y  <title>Write your thoughts</title>
   <style>
     body {
       margin: 0;
@@ -24,7 +24,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(20, 20, 20, 0.75); /* dark overlay for grunge effect */
+      background: rgba(20, 20, 20, 0.75);
       z-index: 0;
     }
 
@@ -43,7 +43,7 @@
 
     h1, h2 {
       text-align: center;
-      color: #ff4757; /* red-rock highlight */
+      color: #ff4757;
       text-shadow: 2px 2px 8px black;
     }
 
@@ -116,40 +116,32 @@
 </head>
 <body>
   <div class="overlay"></div>
-  
+
   <div class="card">
     <h1>Write your thoughts</h1>
     <div>
       <img src="cover.jpg" alt="album cover"/>
     </div>
     <audio controls src="song.mp3">Your browser does not support audio</audio>
-    
+
     <form id="thoughtForm">
-      <textarea name="text" id="text" placeholder="Type your thoughts about the song..."></textarea>
+      <textarea name="text" id="thoughtInput" placeholder="Type your thoughts about the song..."></textarea>
       <br>
-      <button type="submit">Send</button>
+      <button type="submit" id="submitBtn">Send</button>
     </form>
-    
+
     <div id="status"></div>
     <h2>All thoughts</h2>
     <ul id="list"></ul>
   </div>
 
   <script>
-    const API_BASE = 'https://TODO_BACKEND_URL'; // TODO: replace with backend URL
-    
-    async function postThought(text) {
-      const res = await fetch(API_BASE + '/api/thoughts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      });
-      return res.json();
-    }
+    // Replace with your EC2 public IP
+    const API_BASE = 'http://54.91.239.188:3000/api';
 
-    async function loadThoughts() {
+    async function fetchThoughts() {
       try {
-        const res = await fetch(API_BASE + '/api/thoughts');
+        const res = await fetch(`${API_BASE}/thoughts`);
         const data = await res.json();
         const list = document.getElementById('list');
         list.innerHTML = '';
@@ -158,29 +150,39 @@
           li.textContent = new Date(t.created_at).toLocaleString() + ' — ' + t.text;
           list.appendChild(li);
         });
-      } catch (e) {
-        console.error(e);
+      } catch (err) {
+        console.error(err);
       }
     }
 
-    document.getElementById('thoughtForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const text = document.getElementById('text').value.trim();
-      if (!text) return;
-      document.getElementById('status').textContent = 'Sending...';
+    async function addThought(text) {
       try {
-        await postThought(text);
-        document.getElementById('status').textContent = 'Saved';
-        document.getElementById('text').value = '';
-        await loadThoughts();
+        const res = await fetch(`${API_BASE}/thoughts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const result = await res.json();
+        console.log(result);
+        fetchThoughts();
       } catch (err) {
-        document.getElementById('status').textContent = 'Error';
         console.error(err);
       }
+    }
+
+    // Hook form
+    document.getElementById('thoughtForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('thoughtInput').value.trim();
+      if (!input) return;
+      addThought(input);
+      document.getElementById('thoughtInput').value = '';
+      document.getElementById('status').textContent = 'Sent!';
+      setTimeout(() => { document.getElementById('status').textContent = ''; }, 2000);
     });
 
-    // initial load
-    loadThoughts();
+    // Load thoughts initially
+    fetchThoughts();
   </script>
 </body>
 </html>

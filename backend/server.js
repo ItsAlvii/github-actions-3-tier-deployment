@@ -1,15 +1,22 @@
-// server.js
 const express = require('express');
 const mysql = require('mysql2/promise');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+
+// Allow requests from S3 frontend
+app.use(cors({
+  origin: '*', // for testing; in production, replace '*' with your S3 website URL
+  methods: ['GET','POST']
+}));
+
 app.use(bodyParser.json());
 
 const PORT = process.env.PORT || 3000;
 
-// create pool (recommended instead of single connection)
+// MySQL connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -20,12 +27,12 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// test route
-app.get('/', (req, res) => {
-  res.send('Backend is running with MySQL 🚀');
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
-// get all thoughts
+// Get all thoughts
 app.get('/api/thoughts', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM thoughts ORDER BY created_at DESC');
@@ -36,7 +43,7 @@ app.get('/api/thoughts', async (req, res) => {
   }
 });
 
-// add a new thought
+// Add a new thought
 app.post('/api/thoughts', async (req, res) => {
   try {
     const { text } = req.body;
@@ -51,6 +58,6 @@ app.post('/api/thoughts', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Backend running on port ${PORT}`);
 });
 
