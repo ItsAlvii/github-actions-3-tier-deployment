@@ -47,14 +47,12 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Write .env file on EC2 from secrets
-            cat <<EOF > ~/my-thoughs-app/backend/.env
-DB_HOST=${{ secrets.DB_HOST }}
-DB_USER=${{ secrets.DB_USER }}
-DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-DB_NAME=${{ secrets.DB_NAME }}
-PORT=3000
-EOF
+            # Write .env file on EC2 from GitHub secrets
+            echo "DB_HOST=${{ secrets.DB_HOST }}" > ~/my-thoughs-app/backend/.env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> ~/my-thoughs-app/backend/.env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> ~/my-thoughs-app/backend/.env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> ~/my-thoughs-app/backend/.env
+            echo "PORT=3000" >> ~/my-thoughs-app/backend/.env
 
             # Pull latest Docker image
             docker pull 567781376531.dkr.ecr.us-east-1.amazonaws.com/my-thoughts-backend:latest
