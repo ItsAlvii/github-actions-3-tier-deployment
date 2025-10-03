@@ -1,0 +1,68 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2. Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # 3. Log in to ECR
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # 4. Build Docker image
+      - name: Build Docker image
+        run: |
+          IMAGE_URI=567781376531.dkr.ecr.us-east-1.amazonaws.com/my-thoughts-backend:latest
+          docker build -t $IMAGE_URI ./backend
+
+      # 5. Push Docker image to ECR
+      - name: Push Docker image
+        run: |
+          IMAGE_URI=567781376531.dkr.ecr.us-east-1.amazonaws.com/my-thoughts-backend:latest
+          docker push $IMAGE_URI
+
+      # 6. Deploy to EC2 (via SSH)
+      - name: SSH & deploy to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Write .env file on EC2 from secrets
+            cat <<EOF > ~/my-thoughs-app/backend/.env
+DB_HOST=${{ secrets.DB_HOST }}
+DB_USER=${{ secrets.DB_USER }}
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+DB_NAME=${{ secrets.DB_NAME }}
+PORT=3000
+EOF
+
+            # Pull latest Docker image
+            docker pull 567781376531.dkr.ecr.us-east-1.amazonaws.com/my-thoughts-backend:latest
+
+            # Stop & remove old container
+            docker stop backend || true
+            docker rm backend || true
+
+            # Run new container
+            docker run -d --name backend -p 3000:3000 --env-file ~/my-thoughs-app/backend/.env 567781376531.dkr.ecr.us-east-1.amazonaws.com/my-thoughts-backend:latest
+
