@@ -22,5 +22,5 @@ jobs:
 
       - name: Sync frontend files to S3
         run: |
-          aws s3 sync ./frontend s3://thoughts-frontend-bucket --delete --acl public-read
+          aws s3 sync ./frontend s3://thoughts-frontend-bucket --delete
 
